@@ -1,0 +1,20 @@
+{
+  "price_monitoring": {
+    "interval_minutes": 15,
+    "min_price_change_percent": 5
+  },
+
+  "rsi": {
+    "enabled": true,
+    "value": 70,
+    "timeframe_minutes": 15
+  },
+
+  "extra_info": {
+    "show_price_change_24h": true,
+    "show_orderbook_imbalance": false,
+    "show_listing_date": true,
+    "show_volume_24h": true,
+    "show_funding_rate": true
+  }
+}
