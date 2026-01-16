@@ -64,13 +64,21 @@ func main() {
 		symbols, err = scanner.GetContracts()
 		for _, symbol := range symbols {
 
-			pump, open, close := scanner.FindPump(symbol)
+			pump, open, close, kline := scanner.FindPump(symbol)
 			if pump >= cfg.PriceMonitoring.MinPriceChangePercent {
 				vol, _ := scanner.Get24hVolume(symbol)
 				RSI, _ := scanner.GetRSI(symbol)
 				funding, _ := scanner.GetFundingRate(symbol)
 				listingTime, _ := scanner.ListingDate(symbol)
 				price24h, _ := scanner.GetPrice24h(symbol)
+				imbalance, _ := scanner.GetImbalance(symbol)
+
+				file := fmt.Sprintf(
+					"charts/%s_%d.png",
+					symbol,
+					time.Now().Unix(),
+				)
+				scanner.DrawPriceChart(symbol, kline, file)
 
 				fmt.Printf("Coin: %s, Pump: %.2f%%, Price: (%.5f->%.5f) Volume(24h): %.2fm, RSI: %.2f\n",
 					symbol,
@@ -87,7 +95,8 @@ func main() {
 					"🤑Volume(24h): %.2fm\n"+
 					"🙀RSI: %.2f\n"+
 					"✉️Funding Rate: %.3f%%\n"+
-					"🕑Listing Time: %s",
+					"🕑Listing: %d days ago\n"+
+					"Imbalance: %.2f%%\n",
 					symbol,
 					pump,
 					open,
@@ -96,11 +105,20 @@ func main() {
 					vol/1_000_000,
 					RSI,
 					funding,
-					listingTime.Format("02-January-2006"))
+					listingTime,
+					imbalance)
 
+				err := telegram.SendPhoto(
+					file,
+					strttg,
+				)
+				if err != nil {
+					log.Println("telegram error:", err)
+				}
+				os.Remove(file)
 				//telegram.SendMessage(strttg)
-				path, _ := rndPicture()
-				telegram.SendPhotoByURL(tgCfg.ChatID, tgCfg.BotToken, path, strttg)
+				//path, _ := rndPicture()
+				//telegram.SendPhotoByURL(tgCfg.ChatID, tgCfg.BotToken, path, strttg)
 				//fmt.Printf("listingTime: %s, price24h: %.3f%%\n", listingTime.Format("2006-01-02"), price24h)
 			}
 		}

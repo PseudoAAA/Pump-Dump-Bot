@@ -53,3 +53,10 @@ type RSIResp struct {
 		Close []float64 `json:"close"`
 	} `json:"data"`
 }
+
+type ImbalanceResp struct {
+	Data struct {
+		Bids [][]float64 `json:"bids"`
+		Asks [][]float64 `json:"asks"`
+	} `json:"data"`
+}

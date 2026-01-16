@@ -13,35 +13,29 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-// Реализует интерфейс TelegramSender для отправки сообщений в Telegram.
 type TelegramAdapter struct {
-	bot    *tgbotapi.BotAPI // Экземпляр бота API Telegram
-	chatID int64            // ID чата, куда будут отправляться сообщения
+	bot    *tgbotapi.BotAPI
+	chatID int64
 }
 
 // NewTelegramAdapter создаёт новый экземпляр TelegramAdapter.
-// Принимает токен бота (botToken) и ID чата (chatID).
-// Возвращает ошибку, если не удалось инициализировать бота.
 func NewTelegramAdapter(botToken string, chatID int64) (*TelegramAdapter, error) {
-	// Создаём новый экземпляр BotAPI с использованием токена бота
+
 	bot, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
 		// Если произошла ошибка при инициализации бота, возвращаем её
 		return nil, err
 	}
-	// Возвращаем инициализированный адаптер с ботом и ID чата
+
 	return &TelegramAdapter{bot: bot, chatID: chatID}, nil
 }
 
 // Отправляет текстовое сообщение в Telegram-чат.
 func (t *TelegramAdapter) SendMessage(message string) error {
-	// Создаём новое текстовое сообщение для отправки в указанный чат
 	msg := tgbotapi.NewMessage(t.chatID, message)
 
-	// Отправляем сообщение через API Telegram
 	_, err := t.bot.Send(msg)
 
-	// Возвращаем ошибку, если отправка не удалась
 	return err
 }
 
@@ -82,5 +76,19 @@ func (t *TelegramAdapter) SendPhotoByURL(chatID int64, botToken, filePath, capti
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	_, err = http.DefaultClient.Do(req)
+	return err
+}
+
+func (t *TelegramAdapter) SendPhoto(filePath, caption string) error {
+	if _, err := os.Stat(filePath); err != nil {
+		return err
+	}
+	photo := tgbotapi.NewPhoto(
+		t.chatID,
+		tgbotapi.FilePath(filePath))
+
+	photo.Caption = caption
+
+	_, err := t.bot.Send(photo)
 	return err
 }
