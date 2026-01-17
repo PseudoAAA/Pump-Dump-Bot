@@ -21,7 +21,12 @@ func GetContracts() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -48,7 +53,7 @@ func FindPump(symbol string) (pct float64, open float64, close float64, kline Kl
 		log.Fatal("mexc config load error", "err", err)
 	}
 
-	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Min%f&limit=100",
+	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Min%d&limit=100",
 		symbol,
 		cfg.PriceMonitoring.IntervalMinutes)
 
@@ -56,12 +61,19 @@ func FindPump(symbol string) (pct float64, open float64, close float64, kline Kl
 	if err != nil {
 		return 0, 0, 0, KlineData{}
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 
 	var r KlineResp
-	json.Unmarshal(body, &r)
+	if err := json.Unmarshal(body, &r); err != nil {
+		log.Fatal(err)
+	}
 
 	if len(r.Data.Open) < 2 || len(r.Data.Close) < 0 || !isVolumeSpike(r, 30, 1) {
 		return 0, 0, 0, KlineData{}
@@ -116,11 +128,18 @@ func Get24hVolume(symbol string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	var r TickerResp
-	json.Unmarshal(body, &r)
+	if err := json.Unmarshal(body, &r); err != nil {
+		log.Fatal(err)
+	}
 
 	return r.Data.Volume24, nil
 }
@@ -135,7 +154,7 @@ func GetRSI(symbol string) (float64, error) {
 		return 0, nil
 	}
 
-	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Min%f&limit=100",
+	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Min%d&limit=100",
 		symbol,
 		cfg.RSI.TimeframeMinutes)
 
@@ -143,11 +162,18 @@ func GetRSI(symbol string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	var r RSIResp
-	json.Unmarshal(body, &r)
+	if err := json.Unmarshal(body, &r); err != nil {
+		log.Fatal(err)
+	}
 
 	closes := r.Data.Close
 	if len(closes) < 6+1 {
@@ -190,11 +216,18 @@ func GetFundingRate(symbol string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	var r FundingResp
-	json.Unmarshal(body, &r)
+	if err := json.Unmarshal(body, &r); err != nil {
+		log.Fatal(err)
+	}
 
 	return r.Data.FundingRate * 100, nil
 }
@@ -216,11 +249,18 @@ func ListingDate(symbol string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	var r ListingResp
-	json.Unmarshal(body, &r)
+	if err := json.Unmarshal(body, &r); err != nil {
+		log.Fatal(err)
+	}
 
 	if r.Data.Time == nil || len(r.Data.Time) <= 0 {
 		return 0, nil
@@ -251,11 +291,18 @@ func GetPrice24h(symbol string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	var r TickerResp
-	json.Unmarshal(body, &r)
+	if err := json.Unmarshal(body, &r); err != nil {
+		log.Fatal(err)
+	}
 
 	return r.Data.Price24 * 100, nil
 }
@@ -278,11 +325,18 @@ func GetImbalance(symbol string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	var r ImbalanceResp
-	json.Unmarshal(body, &r)
+	if err := json.Unmarshal(body, &r); err != nil {
+		log.Fatal(err)
+	}
 
 	var bidVol, askVol float64
 

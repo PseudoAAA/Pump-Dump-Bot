@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
-	"math/rand"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -50,15 +48,11 @@ func main() {
 		log.Fatal("mexc config load error", "err", err)
 	}
 
-	// Проверка: бот жив
-	telegram.SendMessage("")
-
 	symbols, err := scanner.GetContracts()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println("Количество торговых пар:", len(symbols))
+	fmt.Println("Symbols count:", len(symbols))
 
 	for {
 		symbols, err = scanner.GetContracts()
@@ -78,7 +72,10 @@ func main() {
 					symbol,
 					time.Now().Unix(),
 				)
-				scanner.DrawPriceChart(symbol, kline, file)
+
+				if err := scanner.DrawPriceChart(symbol, kline, file); err != nil {
+					logger.Warn("DrawPriceChart", err)
+				}
 
 				fmt.Printf("Coin: %s, Pump: %.2f%%, Price: (%.5f->%.5f) Volume(24h): %.2fm, RSI: %.2f\n",
 					symbol,
@@ -108,42 +105,14 @@ func main() {
 					listingTime,
 					imbalance)
 
-				err := telegram.SendPhoto(
-					file,
-					strttg,
-				)
-				if err != nil {
-					log.Println("telegram error:", err)
+				if err := telegram.SendPhoto(file, strttg); err != nil {
+					logger.Warn("SendPhoto error: ", err)
 				}
-				os.Remove(file)
-				//telegram.SendMessage(strttg)
-				//path, _ := rndPicture()
-				//telegram.SendPhotoByURL(tgCfg.ChatID, tgCfg.BotToken, path, strttg)
-				//fmt.Printf("listingTime: %s, price24h: %.3f%%\n", listingTime.Format("2006-01-02"), price24h)
+
+				if err := os.Remove(file); err != nil {
+					logger.Warn("Remove photo error: ", err)
+				}
 			}
 		}
 	}
-}
-
-func rndPicture() (string, error) {
-	dir := "pictures"
-	entries, err := os.ReadDir("pictures")
-	if err != nil {
-		return "", err
-	}
-
-	var files []string
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-		files = append(files, filepath.Join(dir, e.Name()))
-	}
-
-	if len(files) == 0 {
-		return "", fmt.Errorf("no files in directory %s", dir)
-	}
-
-	rand.Seed(time.Now().UnixNano())
-	return files[rand.Intn(len(files))], nil
 }
