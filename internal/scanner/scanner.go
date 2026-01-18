@@ -21,12 +21,7 @@ func GetContracts() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -53,7 +48,7 @@ func FindPump(symbol string) (pct float64, open float64, close float64, kline Kl
 		log.Fatal("mexc config load error", "err", err)
 	}
 
-	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Min%d&limit=100",
+	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Min%f&limit=100",
 		symbol,
 		cfg.PriceMonitoring.IntervalMinutes)
 
@@ -61,18 +56,13 @@ func FindPump(symbol string) (pct float64, open float64, close float64, kline Kl
 	if err != nil {
 		return 0, 0, 0, KlineData{}
 	}
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 
 	var r KlineResp
 	if err := json.Unmarshal(body, &r); err != nil {
-		log.Fatal(err)
+		return 0, 0, 0, KlineData{}
 	}
 
 	if len(r.Data.Open) < 2 || len(r.Data.Close) < 0 || !isVolumeSpike(r, 30, 1) {
@@ -128,17 +118,12 @@ func Get24hVolume(symbol string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	var r TickerResp
 	if err := json.Unmarshal(body, &r); err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
 
 	return r.Data.Volume24, nil
@@ -154,7 +139,7 @@ func GetRSI(symbol string) (float64, error) {
 		return 0, nil
 	}
 
-	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Min%d&limit=100",
+	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Min%f&limit=100",
 		symbol,
 		cfg.RSI.TimeframeMinutes)
 
@@ -162,17 +147,12 @@ func GetRSI(symbol string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	var r RSIResp
 	if err := json.Unmarshal(body, &r); err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
 
 	closes := r.Data.Close
@@ -216,17 +196,12 @@ func GetFundingRate(symbol string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	var r FundingResp
 	if err := json.Unmarshal(body, &r); err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
 
 	return r.Data.FundingRate * 100, nil
@@ -235,7 +210,7 @@ func GetFundingRate(symbol string) (float64, error) {
 func ListingDate(symbol string) (int64, error) {
 	cfg, err := config.LoadMexcConfig("internal/config/config.json")
 	if err != nil {
-		log.Fatal("mexc config load error", "err", err)
+		log.Fatal(err)
 	}
 
 	if !cfg.ExtraInfo.ShowListingDate {
@@ -249,17 +224,12 @@ func ListingDate(symbol string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	var r ListingResp
 	if err := json.Unmarshal(body, &r); err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
 
 	if r.Data.Time == nil || len(r.Data.Time) <= 0 {
@@ -291,17 +261,12 @@ func GetPrice24h(symbol string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	var r TickerResp
 	if err := json.Unmarshal(body, &r); err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
 
 	return r.Data.Price24 * 100, nil
@@ -325,17 +290,12 @@ func GetImbalance(symbol string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	var r ImbalanceResp
 	if err := json.Unmarshal(body, &r); err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
 
 	var bidVol, askVol float64

@@ -1,13 +1,13 @@
 {
   "price_monitoring": {
-    "interval_minutes": 15,
+    "interval_minutes": 10,
     "min_price_change_percent": 5
   },
 
   "rsi": {
     "enabled": true,
-    "value": 70,
-    "timeframe_minutes": 15
+    "value": 80,
+    "timeframe_minutes": 10
   },
 
   "extra_info": {
