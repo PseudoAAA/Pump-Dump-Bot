@@ -19,8 +19,10 @@ type TelegramConfig struct {
 // Конфиг для биржи
 type Config struct {
 	PriceMonitoring PriceMonitoringConfig `json:"price_monitoring"`
-	RSI             RSIConfig             `json:"rsi"`
+	RsiParams       RSIConfig             `json:"rsi"`
 	ExtraInfo       ExtraInfoConfig       `json:"extra_info"`
+	FundingParams   FundingConfig         `json:"funding_params"`
+	ImbalanceParams ImbalanceConfig       `json:"imbalance_params"`
 }
 
 type PriceMonitoringConfig struct {
@@ -29,9 +31,19 @@ type PriceMonitoringConfig struct {
 }
 
 type RSIConfig struct {
-	Enabled          bool `json:"enabled"`
-	Value            int  `json:"value"`
-	TimeframeMinutes int  `json:"timeframe_minutes"`
+	Enabled          bool    `json:"enabled"`
+	Value            float64 `json:"value"`
+	TimeframeMinutes int     `json:"timeframe_minutes"`
+}
+
+type FundingConfig struct {
+	Enabled bool    `json:"enabled"`
+	Value   float64 `json:"value"`
+}
+
+type ImbalanceConfig struct {
+	Enabled bool    `json:"enabled"`
+	Value   float64 `json:"value"`
 }
 
 type ExtraInfoConfig struct {

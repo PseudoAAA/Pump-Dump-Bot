@@ -83,11 +83,10 @@ func (t *TelegramAdapter) SendPhoto(filePath, caption string) error {
 	if _, err := os.Stat(filePath); err != nil {
 		return err
 	}
-	photo := tgbotapi.NewPhoto(
-		t.chatID,
-		tgbotapi.FilePath(filePath))
 
+	photo := tgbotapi.NewPhoto(t.chatID, tgbotapi.FilePath(filePath))
 	photo.Caption = caption
+	photo.ParseMode = "HTML"
 
 	_, err := t.bot.Send(photo)
 	return err

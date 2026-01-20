@@ -60,3 +60,10 @@ type ImbalanceResp struct {
 		Asks [][]float64 `json:"asks"`
 	} `json:"data"`
 }
+
+type PumpParams struct {
+	Pct   float64
+	Open  float64
+	Close float64
+	Kline KlineData
+}

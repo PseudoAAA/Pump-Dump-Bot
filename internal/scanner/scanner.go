@@ -2,18 +2,15 @@ package scanner
 
 import (
 	"PumpDumpBot/internal/config"
+	"PumpDumpBot/logger"
 	"encoding/json"
 	"fmt"
-	"image/color"
+	"html"
 	"io"
 	"log"
-	"math"
 	"net/http"
+	"strings"
 	"time"
-
-	"gonum.org/v1/plot"
-	"gonum.org/v1/plot/plotter"
-	"gonum.org/v1/plot/vg"
 )
 
 func GetContracts() ([]string, error) {
@@ -24,14 +21,8 @@ func GetContracts() ([]string, error) {
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	var r ContractResp
-	if err := json.Unmarshal(body, &r); err != nil {
-		return nil, err
-	}
+	json.Unmarshal(body, &r)
 
 	var symbols []string
 	for _, c := range r.Data {
@@ -59,19 +50,23 @@ func FindPump(symbol string) (pct float64, open float64, close float64, kline Kl
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
-
 	var r KlineResp
-	if err := json.Unmarshal(body, &r); err != nil {
-		return 0, 0, 0, KlineData{}
-	}
+	json.Unmarshal(body, &r)
 
 	if len(r.Data.Open) < 2 || len(r.Data.Close) < 0 || !isVolumeSpike(r, 30, 1) {
 		return 0, 0, 0, KlineData{}
 	}
-
 	open = r.Data.Open[0]
 	close = r.Data.Close[len(r.Data.Close)-1]
-	return ((close - open) / open) * 100, open, close, r.Data
+
+	rsi, _ := GetRSI(symbol)
+	funding, _ := GetFundingRate(symbol)
+	imbalance, _ := GetImbalance(symbol)
+	if checkRSI(cfg, rsi) && checkFunding(cfg, funding) && checkImbalance(cfg, imbalance) {
+		return ((close - open) / open) * 100, open, close, r.Data
+	}
+
+	return 0, 0, 0, KlineData{}
 }
 
 func isVolumeSpike(kline KlineResp, lookback int, multiplier float64) bool {
@@ -122,9 +117,7 @@ func Get24hVolume(symbol string) (float64, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	var r TickerResp
-	if err := json.Unmarshal(body, &r); err != nil {
-		return 0, err
-	}
+	json.Unmarshal(body, &r)
 
 	return r.Data.Volume24, nil
 }
@@ -135,13 +128,13 @@ func GetRSI(symbol string) (float64, error) {
 		log.Fatal("mexc config load error", "err", err)
 	}
 
-	if !cfg.RSI.Enabled {
+	if !cfg.RsiParams.Enabled {
 		return 0, nil
 	}
 
 	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Min%f&limit=100",
 		symbol,
-		cfg.RSI.TimeframeMinutes)
+		cfg.RsiParams.TimeframeMinutes)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -151,9 +144,7 @@ func GetRSI(symbol string) (float64, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	var r RSIResp
-	if err := json.Unmarshal(body, &r); err != nil {
-		return 0, err
-	}
+	json.Unmarshal(body, &r)
 
 	closes := r.Data.Close
 	if len(closes) < 6+1 {
@@ -161,7 +152,6 @@ func GetRSI(symbol string) (float64, error) {
 	}
 
 	var gain, loss float64
-
 	for i := len(closes) - 6; i < len(closes); i++ {
 		diff := closes[i] - closes[i-1]
 		if diff > 0 {
@@ -200,9 +190,7 @@ func GetFundingRate(symbol string) (float64, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	var r FundingResp
-	if err := json.Unmarshal(body, &r); err != nil {
-		return 0, err
-	}
+	json.Unmarshal(body, &r)
 
 	return r.Data.FundingRate * 100, nil
 }
@@ -228,9 +216,7 @@ func ListingDate(symbol string) (int64, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	var r ListingResp
-	if err := json.Unmarshal(body, &r); err != nil {
-		return 0, err
-	}
+	json.Unmarshal(body, &r)
 
 	if r.Data.Time == nil || len(r.Data.Time) <= 0 {
 		return 0, nil
@@ -265,9 +251,7 @@ func GetPrice24h(symbol string) (float64, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	var r TickerResp
-	if err := json.Unmarshal(body, &r); err != nil {
-		return 0, err
-	}
+	json.Unmarshal(body, &r)
 
 	return r.Data.Price24 * 100, nil
 }
@@ -294,12 +278,9 @@ func GetImbalance(symbol string) (float64, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	var r ImbalanceResp
-	if err := json.Unmarshal(body, &r); err != nil {
-		return 0, err
-	}
+	json.Unmarshal(body, &r)
 
 	var bidVol, askVol float64
-
 	for _, b := range r.Data.Bids {
 		if len(b) < 2 {
 			continue
@@ -322,84 +303,73 @@ func GetImbalance(symbol string) (float64, error) {
 	return bidVol / total, nil
 }
 
-func DrawPriceChart(symbol string, kline KlineData, filePath string) error {
-	p := plot.New()
-	p.Title.Text = symbol
-	p.X.Tick.Marker = plot.TimeTicks{Format: "15:04"}
-
-	n := len(kline.Close)
-	if n == 0 || len(kline.Volume) != n || len(kline.Time) != n {
-		return fmt.Errorf("invalid kline data")
+func FinalOutput(symbol string, params PumpParams, cfg *config.Config) (output string) {
+	logger := logger.SetupLogger()
+	if cfg == nil {
+		logger.Warn("config is nil")
+		return "Final output cfg is nil"
 	}
 
-	minPrice := kline.Close[0]
-	maxPrice := kline.Close[0]
-	maxVol := 0.0
-	for i := 0; i < n; i++ {
-		minPrice = math.Min(minPrice, kline.Close[i])
-		maxPrice = math.Max(maxPrice, kline.Close[i])
-		maxVol = math.Max(maxVol, kline.Volume[i])
+	var str string
+
+	symbolFormated := strings.TrimSuffix(symbol, "_USDT")
+	symbolEscaped := html.EscapeString(symbolFormated)
+
+	str = fmt.Sprintf("<code>%s</code>\nPump %.2f%%\nPrice: %.5f->%.5f\n", symbolEscaped, params.Pct, params.Open, params.Close)
+
+	if cfg.RsiParams.Enabled {
+		rsi, _ := GetRSI(symbol)
+		str += fmt.Sprintf("RSI: %.2f\n", rsi)
 	}
 
-	priceRange := maxPrice - minPrice
-	if priceRange == 0 {
-		priceRange = 1
+	if cfg.ExtraInfo.ShowPriceChange24h {
+		change, _ := GetPrice24h(symbol)
+		str += fmt.Sprintf("Price change: %.3f%%\n", change)
 	}
 
-	greenPts := make(plotter.XYs, 0)
-	redPts := make(plotter.XYs, 0)
-
-	for i := 0; i < n; i++ {
-		t := float64(time.Unix(kline.Time[i], 0).Unix())
-		h := (kline.Volume[i] / maxVol) * priceRange * 0.7 // 70% графика
-
-		if i == 0 || kline.Close[i] >= kline.Close[i-1] {
-			greenPts = append(greenPts, plotter.XY{X: t, Y: minPrice + h})
-		} else {
-			redPts = append(redPts, plotter.XY{X: t, Y: minPrice + h})
-		}
+	if cfg.ExtraInfo.ShowVolume24h {
+		volume, _ := Get24hVolume(symbol)
+		str += fmt.Sprintf("Volume 24h: %.2fM\n", volume/1_000_000)
 	}
 
-	if len(greenPts) > 1 {
-		greenLine, err := plotter.NewLine(greenPts)
-		if err != nil {
-			return err
-		}
-		greenLine.Width = vg.Points(1)
-		greenLine.Color = color.RGBA{R: 0, G: 255, B: 0, A: 255}
-		p.Add(greenLine)
+	if cfg.ExtraInfo.ShowOrderbookImbalance {
+		imbalance, _ := GetImbalance(symbol)
+		str += fmt.Sprintf("Imbalance: %.2f%%\n", imbalance)
 	}
 
-	if len(redPts) > 1 {
-		redLine, err := plotter.NewLine(redPts)
-		if err != nil {
-			return err
-		}
-		redLine.Width = vg.Points(1)
-		redLine.Color = color.RGBA{R: 255, G: 0, B: 0, A: 255}
-		p.Add(redLine)
+	if cfg.ExtraInfo.ShowListingDate {
+		listingTime, _ := ListingDate(symbol)
+		str += fmt.Sprintf("Listing Date: %d days ago\n", listingTime)
 	}
 
-	pricePts := make(plotter.XYs, n)
-	for i := 0; i < n; i++ {
-		t := time.Unix(kline.Time[i], 0)
-		pricePts[i].X = float64(t.Unix())
-		pricePts[i].Y = kline.Close[i]
+	if cfg.ExtraInfo.ShowFundingRate {
+		funding, _ := GetFundingRate(symbol)
+		str += fmt.Sprintf("Funding rate: %.3f%%\n", funding)
 	}
 
-	priceLine, err := plotter.NewLine(pricePts)
-	if err != nil {
-		return err
-	}
-	priceLine.Width = vg.Points(1)
-	priceLine.Color = color.RGBA{R: 0, G: 0, B: 0, A: 200}
-	p.Add(priceLine)
-
-	return p.Save(14*vg.Inch, 6*vg.Inch, filePath)
+	return str
 }
 
-/*
-func FinalOutput(cfg config.Config) {
+func checkRSI(cfg *config.Config, rsiValue float64) bool {
+	if !cfg.RsiParams.Enabled {
+		return true
+	}
 
+	return rsiValue >= cfg.RsiParams.Value
 }
-*/
+
+func checkFunding(cfg *config.Config, fundingValue float64) bool {
+	if !cfg.FundingParams.Enabled {
+		return true
+	}
+
+	return fundingValue <= cfg.FundingParams.Value
+}
+
+func checkImbalance(cfg *config.Config, imbalanceValue float64) bool {
+	if !cfg.ImbalanceParams.Enabled {
+		return true
+	}
+
+	return imbalanceValue >= cfg.ImbalanceParams.Value
+}

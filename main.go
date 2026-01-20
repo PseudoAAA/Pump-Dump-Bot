@@ -4,25 +4,17 @@ import (
 	"PumpDumpBot/internal/adapters"
 	"PumpDumpBot/internal/config"
 	"PumpDumpBot/internal/scanner"
+	"PumpDumpBot/logger"
 	"fmt"
 	"log"
-	"log/slog"
 	"os"
 	"time"
 
 	"github.com/joho/godotenv"
 )
 
-func setupLogger() *slog.Logger {
-	return slog.New(
-		slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level: slog.LevelInfo,
-		}),
-	)
-}
-
 func main() {
-	logger := setupLogger()
+	logger := logger.SetupLogger()
 
 	// Загружаем .env
 	if err := godotenv.Load(); err != nil {
@@ -60,13 +52,7 @@ func main() {
 
 			pump, open, close, kline := scanner.FindPump(symbol)
 			if pump >= cfg.PriceMonitoring.MinPriceChangePercent {
-				vol, _ := scanner.Get24hVolume(symbol)
-				RSI, _ := scanner.GetRSI(symbol)
-				funding, _ := scanner.GetFundingRate(symbol)
-				listingTime, _ := scanner.ListingDate(symbol)
-				price24h, _ := scanner.GetPrice24h(symbol)
-				imbalance, _ := scanner.GetImbalance(symbol)
-
+				output := scanner.FinalOutput(symbol, scanner.PumpParams{Pct: pump, Open: open, Close: close, Kline: kline}, cfg)
 				file := fmt.Sprintf(
 					"charts/%s_%d.png",
 					symbol,
@@ -77,20 +63,20 @@ func main() {
 					logger.Warn("DrawPriceChart", err)
 				}
 
-				fmt.Printf("Coin: %s, Pump: %.2f%%, Price: (%.5f->%.5f) Volume(24h): %.2fm, RSI: %.2f\n",
+				/*fmt.Printf("Coin: %s, Pump: %.2f%%, Price: (%.5f->%.5f) Volume(24h): %.2fm, RsiParams: %.2f\n",
 					symbol,
 					pump,
 					open,
 					close,
 					vol/1_000_000.,
-					RSI)
+					RsiParams)
 
-				strttg := fmt.Sprintf("🤡Coin: %s\n"+
+				strttg := fmt.Sprintf("🤡Coin: <code>%s</code>\n"+
 					"🥵Pump: %.2f%%\n"+
 					"🤯Price: (%.5f->%.5f)\n"+
 					"📊PriceChange: %.3f%%\n"+
 					"🤑Volume(24h): %.2fm\n"+
-					"🙀RSI: %.2f\n"+
+					"🙀RsiParams: %.2f\n"+
 					"✉️Funding Rate: %.3f%%\n"+
 					"🕑Listing: %d days ago\n"+
 					"Imbalance: %.2f%%\n",
@@ -100,12 +86,12 @@ func main() {
 					close,
 					price24h,
 					vol/1_000_000,
-					RSI,
+					RsiParams,
 					funding,
 					listingTime,
-					imbalance)
+					imbalance)*/
 
-				if err := telegram.SendPhoto(file, strttg); err != nil {
+				if err := telegram.SendPhoto(file, output); err != nil {
 					logger.Warn("SendPhoto error: ", err)
 				}
 
