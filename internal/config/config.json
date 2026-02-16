@@ -5,7 +5,7 @@
   },
 
   "rsi": {
-    "enabled": true,
+    "enabled": false,
     "value": 40,
     "timeframe_minutes": 10
   },
@@ -21,10 +21,10 @@
   },
 
   "extra_info": {
-    "show_price_change_24h": false,
+    "show_price_change_24h": true,
     "show_orderbook_imbalance": true,
-    "show_listing_date": false,
-    "show_volume_24h": false,
-    "show_funding_rate": false
+    "show_listing_date": true,
+    "show_volume_24h": true,
+    "show_funding_rate": true
   }
 }

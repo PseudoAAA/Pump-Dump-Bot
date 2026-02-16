@@ -54,11 +54,15 @@ type RSIResp struct {
 	} `json:"data"`
 }
 
-type ImbalanceResp struct {
+type DepthResp struct {
 	Data struct {
 		Bids [][]float64 `json:"bids"`
 		Asks [][]float64 `json:"asks"`
 	} `json:"data"`
+}
+type LiquidityTargets struct {
+	UpperPrice float64
+	LowerPrice float64
 }
 
 type PumpParams struct {
@@ -66,4 +70,9 @@ type PumpParams struct {
 	Open  float64
 	Close float64
 	Kline KlineData
+}
+
+type OrderLevel struct {
+	Price  float64
+	Volume float64
 }

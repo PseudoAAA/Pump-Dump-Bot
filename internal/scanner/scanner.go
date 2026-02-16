@@ -53,11 +53,11 @@ func FindPump(symbol string) (pct float64, open float64, close float64, kline Kl
 	var r KlineResp
 	json.Unmarshal(body, &r)
 
-	if len(r.Data.Open) < 2 || len(r.Data.Close) < 0 || !isVolumeSpike(r, 30, 1) {
+	if len(r.Data.Open) < 2 || len(r.Data.Close) < 0 || !isVolumeSpike(r, 15, 1) {
 		return 0, 0, 0, KlineData{}
 	}
 	open = r.Data.Open[0]
-	close = r.Data.Close[len(r.Data.Close)-1]
+	close = r.Data.Close[len(r.Data.Close)-1] //len(r.Data.Close)-1
 
 	rsi, _ := GetRSI(symbol)
 	funding, _ := GetFundingRate(symbol)
@@ -196,14 +196,14 @@ func GetFundingRate(symbol string) (float64, error) {
 }
 
 func ListingDate(symbol string) (int64, error) {
-	cfg, err := config.LoadMexcConfig("internal/config/config.json")
+	/*cfg, err := config.LoadMexcConfig("internal/config/config.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	if !cfg.ExtraInfo.ShowListingDate {
 		return 0, nil
-	}
+	}*/
 
 	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Month1&limit=100",
 		symbol)
@@ -277,7 +277,7 @@ func GetImbalance(symbol string) (float64, error) {
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
-	var r ImbalanceResp
+	var r DepthResp
 	json.Unmarshal(body, &r)
 
 	var bidVol, askVol float64

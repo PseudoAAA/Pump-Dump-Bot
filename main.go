@@ -1,6 +1,7 @@
 package main
 
 import (
+	"PumpDumpBot/internal/ForBot"
 	"PumpDumpBot/internal/adapters"
 	"PumpDumpBot/internal/config"
 	"PumpDumpBot/internal/scanner"
@@ -15,7 +16,6 @@ import (
 
 func main() {
 	logger := logger.SetupLogger()
-
 	// Загружаем .env
 	if err := godotenv.Load(); err != nil {
 		logger.Warn(".env не найден, используем env окружения")
@@ -46,12 +46,16 @@ func main() {
 	}
 	fmt.Println("Symbols count:", len(symbols))
 
+	go ForBot.CheckMessages()
+
 	for {
 		symbols, err = scanner.GetContracts()
 		for _, symbol := range symbols {
 
 			pump, open, close, kline := scanner.FindPump(symbol)
+
 			if pump >= cfg.PriceMonitoring.MinPriceChangePercent {
+
 				output := scanner.FinalOutput(symbol, scanner.PumpParams{Pct: pump, Open: open, Close: close, Kline: kline}, cfg)
 				file := fmt.Sprintf(
 					"charts/%s_%d.png",
@@ -98,6 +102,7 @@ func main() {
 				if err := os.Remove(file); err != nil {
 					logger.Warn("Remove photo error: ", err)
 				}
+
 			}
 		}
 	}

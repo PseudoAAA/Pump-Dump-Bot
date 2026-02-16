@@ -5,10 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0a12b12c-12bc-4827-a154-b3e9cb322a51" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/internal/ForBot/NewBot.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/adapters/telegram_adapter.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/adapters/telegram_adapter.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/config/config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/config/config.json" beforeDir="false" afterPath="$PROJECT_DIR$/internal/config/config.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/scanner/chart_maker.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/scanner/chart_maker.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/scanner/scanner.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/scanner/scanner.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/scanner/types.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/scanner/types.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
