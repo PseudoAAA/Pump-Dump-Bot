@@ -1,9 +1,14 @@
 {
   "price_monitoring": {
-    "interval_minutes": 10,
-    "min_price_change_percent": 6
+      "interval_minutes": 15,
+      "min_price_change_percent": 5.2,
+      "analysis_window_size": 120,
+      "interval_anomaly_seconds": 10
   },
-
+  "anomaly_thresholds": {
+    "z_score_dump": 4.5,
+    "imbalance_dump": -0.7
+  },
   "rsi": {
     "enabled": false,
     "value": 40,
@@ -25,6 +30,7 @@
     "show_orderbook_imbalance": true,
     "show_listing_date": true,
     "show_volume_24h": true,
-    "show_funding_rate": true
+    "show_funding_rate": true,
+    "show_rsi": true
   }
 }

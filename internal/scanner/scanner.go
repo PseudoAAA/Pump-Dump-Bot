@@ -2,7 +2,6 @@ package scanner
 
 import (
 	"PumpDumpBot/internal/config"
-	"PumpDumpBot/logger"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -33,12 +32,7 @@ func GetContracts() ([]string, error) {
 	return symbols, nil
 }
 
-func FindPump(symbol string) (pct float64, open float64, close float64, kline KlineData) {
-	cfg, err := config.LoadMexcConfig("internal/config/config.json")
-	if err != nil {
-		log.Fatal("mexc config load error", "err", err)
-	}
-
+func FindPump(symbol string, cfg *config.Config) (pct float64, open float64, close float64, kline KlineData) {
 	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Min%f&limit=100",
 		symbol,
 		cfg.PriceMonitoring.IntervalMinutes)
@@ -52,7 +46,7 @@ func FindPump(symbol string) (pct float64, open float64, close float64, kline Kl
 	body, err := io.ReadAll(resp.Body)
 	var r KlineResp
 	json.Unmarshal(body, &r)
-
+	//|| !isVolumeSpike(r, 15, 1)
 	if len(r.Data.Open) < 2 || len(r.Data.Close) < 0 || !isVolumeSpike(r, 15, 1) {
 		return 0, 0, 0, KlineData{}
 	}
@@ -128,7 +122,7 @@ func GetRSI(symbol string) (float64, error) {
 		log.Fatal("mexc config load error", "err", err)
 	}
 
-	if !cfg.RsiParams.Enabled {
+	if !cfg.ExtraInfo.ShowRSI {
 		return 0, nil
 	}
 
@@ -196,15 +190,6 @@ func GetFundingRate(symbol string) (float64, error) {
 }
 
 func ListingDate(symbol string) (int64, error) {
-	/*cfg, err := config.LoadMexcConfig("internal/config/config.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if !cfg.ExtraInfo.ShowListingDate {
-		return 0, nil
-	}*/
-
 	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Month1&limit=100",
 		symbol)
 
@@ -303,13 +288,7 @@ func GetImbalance(symbol string) (float64, error) {
 	return bidVol / total, nil
 }
 
-func FinalOutput(symbol string, params PumpParams, cfg *config.Config) (output string) {
-	logger := logger.SetupLogger()
-	if cfg == nil {
-		logger.Warn("config is nil")
-		return "Final output cfg is nil"
-	}
-
+func FinalOutput(symbol string, params PumpParams, cfg config.DbConfig) (output string) {
 	var str string
 
 	symbolFormated := strings.TrimSuffix(symbol, "_USDT")
@@ -317,7 +296,7 @@ func FinalOutput(symbol string, params PumpParams, cfg *config.Config) (output s
 
 	str = fmt.Sprintf("<code>%s</code>\nPump %.2f%%\nPrice: %.5f->%.5f\n", symbolEscaped, params.Pct, params.Open, params.Close)
 
-	if cfg.RsiParams.Enabled {
+	if cfg.ExtraInfo.ShowRSI {
 		rsi, _ := GetRSI(symbol)
 		str += fmt.Sprintf("RSI: %.2f\n", rsi)
 	}
@@ -351,7 +330,7 @@ func FinalOutput(symbol string, params PumpParams, cfg *config.Config) (output s
 }
 
 func checkRSI(cfg *config.Config, rsiValue float64) bool {
-	if !cfg.RsiParams.Enabled {
+	if !cfg.ExtraInfo.ShowRSI {
 		return true
 	}
 

@@ -60,10 +60,6 @@ type DepthResp struct {
 		Asks [][]float64 `json:"asks"`
 	} `json:"data"`
 }
-type LiquidityTargets struct {
-	UpperPrice float64
-	LowerPrice float64
-}
 
 type PumpParams struct {
 	Pct   float64
@@ -72,7 +68,11 @@ type PumpParams struct {
 	Kline KlineData
 }
 
-type OrderLevel struct {
-	Price  float64
-	Volume float64
+type OrderBookAnomaly struct {
+	IsAnomaly  bool
+	BidZScore  float64
+	AskZScore  float64
+	Imbalance  float64
+	CurrentBid float64
+	CurrentAsk float64
 }

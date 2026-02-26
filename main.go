@@ -4,6 +4,7 @@ import (
 	"PumpDumpBot/internal/ForBot"
 	"PumpDumpBot/internal/adapters"
 	"PumpDumpBot/internal/config"
+	"PumpDumpBot/internal/db"
 	"PumpDumpBot/internal/scanner"
 	"PumpDumpBot/logger"
 	"fmt"
@@ -21,6 +22,14 @@ func main() {
 		logger.Warn(".env не найден, используем env окружения")
 	}
 
+	db, err := db.InitDB(os.Getenv("DB_STR"))
+	if err != nil {
+		logger.Error("database init error", "err", err)
+		os.Exit(1)
+	}
+
+	fmt.Println(db.GetActiveUsers())
+
 	// Конфиг
 	tgCfg, err := config.LoadTelegramConfig(logger)
 	if err != nil {
@@ -29,7 +38,7 @@ func main() {
 	}
 
 	// Telegram adapter
-	telegram, err := adapters.NewTelegramAdapter(tgCfg.BotToken, tgCfg.ChatID)
+	_, err = adapters.NewTelegramAdapter(tgCfg.BotToken, tgCfg.ChatID)
 	if err != nil {
 		logger.Error("telegram init error", "err", err)
 		os.Exit(1)
@@ -52,11 +61,11 @@ func main() {
 		symbols, err = scanner.GetContracts()
 		for _, symbol := range symbols {
 
-			pump, open, close, kline := scanner.FindPump(symbol)
+			pump, open, close, kline := scanner.FindPump(symbol, cfg)
 
 			if pump >= cfg.PriceMonitoring.MinPriceChangePercent {
-
-				output := scanner.FinalOutput(symbol, scanner.PumpParams{Pct: pump, Open: open, Close: close, Kline: kline}, cfg)
+				pumpParams := scanner.PumpParams{Pct: pump, Open: open, Close: close, Kline: kline}
+				//output := scanner.FinalOutput(symbol, scanner.PumpParams{Pct: pump, Open: open, Close: close, Kline: kline}, cfg)
 				file := fmt.Sprintf(
 					"charts/%s_%d.png",
 					symbol,
@@ -67,38 +76,12 @@ func main() {
 					logger.Warn("DrawPriceChart", err)
 				}
 
-				/*fmt.Printf("Coin: %s, Pump: %.2f%%, Price: (%.5f->%.5f) Volume(24h): %.2fm, RsiParams: %.2f\n",
-					symbol,
-					pump,
-					open,
-					close,
-					vol/1_000_000.,
-					RsiParams)
-
-				strttg := fmt.Sprintf("🤡Coin: <code>%s</code>\n"+
-					"🥵Pump: %.2f%%\n"+
-					"🤯Price: (%.5f->%.5f)\n"+
-					"📊PriceChange: %.3f%%\n"+
-					"🤑Volume(24h): %.2fm\n"+
-					"🙀RsiParams: %.2f\n"+
-					"✉️Funding Rate: %.3f%%\n"+
-					"🕑Listing: %d days ago\n"+
-					"Imbalance: %.2f%%\n",
-					symbol,
-					pump,
-					open,
-					close,
-					price24h,
-					vol/1_000_000,
-					RsiParams,
-					funding,
-					listingTime,
-					imbalance)*/
-
-				if err := telegram.SendPhoto(file, output); err != nil {
+				users, _ := db.GetActiveUsers()
+				ForBot.SendMessageToActiveUsers(users, symbol, file, pumpParams)
+				/*if err := telegram.SendPhoto(file, output); err != nil {
 					logger.Warn("SendPhoto error: ", err)
 				}
-
+				*/
 				if err := os.Remove(file); err != nil {
 					logger.Warn("Remove photo error: ", err)
 				}

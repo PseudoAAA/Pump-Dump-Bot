@@ -201,10 +201,10 @@ func DrawPriceChart(symbol string, kline KlineData, filePath string) error {
 		greenPts[i].X, redPts[i].X, intersectPts[i].X = t, t, t
 		if isGrowth {
 			greenPts[i].Y = v
-			redPts[i].Y = p.Y.Min + (v-p.Y.Min)*0.5
+			redPts[i].Y = p.Y.Min + (v-p.Y.Min)*0.3
 		} else {
 			redPts[i].Y = v
-			greenPts[i].Y = p.Y.Min + (v-p.Y.Min)*0.5
+			greenPts[i].Y = p.Y.Min + (v-p.Y.Min)*0.3
 		}
 		intersectPts[i].Y = math.Min(greenPts[i].Y, redPts[i].Y)
 	}

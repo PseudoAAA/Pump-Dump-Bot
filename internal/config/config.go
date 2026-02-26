@@ -25,6 +25,10 @@ type Config struct {
 	ImbalanceParams ImbalanceConfig       `json:"imbalance_params"`
 }
 
+type DbConfig struct {
+	ExtraInfo ExtraInfoConfig `json:"extra_info"`
+}
+
 type PriceMonitoringConfig struct {
 	IntervalMinutes       int     `json:"interval_minutes"`
 	MinPriceChangePercent float64 `json:"min_price_change_percent"`
@@ -52,6 +56,7 @@ type ExtraInfoConfig struct {
 	ShowListingDate        bool `json:"show_listing_date"`
 	ShowVolume24h          bool `json:"show_volume_24h"`
 	ShowFundingRate        bool `json:"show_funding_rate"`
+	ShowRSI                bool `json:"show_rsi"`
 }
 
 // Загрузка переменных из env

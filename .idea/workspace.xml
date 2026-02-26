@@ -5,10 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0a12b12c-12bc-4827-a154-b3e9cb322a51" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/internal/ForBot/NewBot.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/ForBot/types.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/db/db.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/configbot.json" beforeDir="false" afterPath="$PROJECT_DIR$/configbot.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/ForBot/NewBot.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/ForBot/NewBot.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/config/config.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/config/config.json" beforeDir="false" afterPath="$PROJECT_DIR$/internal/config/config.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/scanner/chart_maker.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/scanner/chart_maker.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/scanner/scanner.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/scanner/scanner.go" afterDir="false" />
@@ -43,6 +46,9 @@
     &quot;accountId&quot;: &quot;18328c39-487a-4daa-8973-d5d410830b33&quot;
   }
 }</component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/internal/scanner/scanner.go" root0="FORCE_HIGHLIGHTING" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0
 }</component>
@@ -72,16 +78,17 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
     &quot;onboarding.tips.debug.path&quot;: &quot;C:/Users/Pseudo/GolandProjects/PumpDumpBot/main.go&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;editor.preferences.fonts.default&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.updates&quot;,
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   }
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Pseudo\GolandProjects\PumpDumpBot\internal" />
+      <recent name="C:\Users\Pseudo\GolandProjects\PumpDumpBot\internal\ForBot" />
       <recent name="C:\Users\Pseudo\GolandProjects\PumpDumpBot\internal\config" />
       <recent name="C:\Users\Pseudo\GolandProjects\PumpDumpBot" />
       <recent name="C:\Users\Pseudo\GolandProjects\PumpDumpBot\clients\telegram" />
-      <recent name="C:\Users\Pseudo\GolandProjects\PumpDumpBot\events\telegram" />
     </key>
   </component>
   <component name="RunManager">
