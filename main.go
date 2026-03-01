@@ -30,14 +30,12 @@ func main() {
 
 	fmt.Println(db.GetActiveUsers())
 
-	// Конфиг
 	tgCfg, err := config.LoadTelegramConfig(logger)
 	if err != nil {
 		logger.Error("telegram config load error", "err", err)
 		os.Exit(1)
 	}
 
-	// Telegram adapter
 	_, err = adapters.NewTelegramAdapter(tgCfg.BotToken, tgCfg.ChatID)
 	if err != nil {
 		logger.Error("telegram init error", "err", err)
@@ -65,7 +63,7 @@ func main() {
 
 			if pump >= cfg.PriceMonitoring.MinPriceChangePercent {
 				pumpParams := scanner.PumpParams{Pct: pump, Open: open, Close: close, Kline: kline}
-				//output := scanner.FinalOutput(symbol, scanner.PumpParams{Pct: pump, Open: open, Close: close, Kline: kline}, cfg)
+
 				file := fmt.Sprintf(
 					"charts/%s_%d.png",
 					symbol,
@@ -77,11 +75,8 @@ func main() {
 				}
 
 				users, _ := db.GetActiveUsers()
-				ForBot.SendMessageToActiveUsers(users, symbol, file, pumpParams)
-				/*if err := telegram.SendPhoto(file, output); err != nil {
-					logger.Warn("SendPhoto error: ", err)
-				}
-				*/
+				ForBot.SendMessageToActiveUsers(db, users, symbol, file, pumpParams)
+
 				if err := os.Remove(file); err != nil {
 					logger.Warn("Remove photo error: ", err)
 				}

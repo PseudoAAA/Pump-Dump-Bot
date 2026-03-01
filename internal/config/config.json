@@ -1,7 +1,7 @@
 {
   "price_monitoring": {
       "interval_minutes": 15,
-      "min_price_change_percent": 5.2,
+      "min_price_change_percent": 5.5,
       "analysis_window_size": 120,
       "interval_anomaly_seconds": 10
   },

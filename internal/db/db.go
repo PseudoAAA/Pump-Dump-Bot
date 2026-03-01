@@ -1,6 +1,7 @@
 package db
 
 import (
+	"PumpDumpBot/internal/config"
 	"database/sql"
 	"fmt"
 	"time"
@@ -25,8 +26,8 @@ func InitDB(conStr string) (*DB, error) {
 	return &DB{conn: conn}, nil
 }
 
-func (db *DB) AddUser(chatID int64, username string) (isExist bool, err error) {
-	trialEnds := time.Now().AddDate(0, 0, 7)
+func (db *DB) AddUser(chatID int64, username string) (bool, error) {
+	trialEnds := time.Now().AddDate(0, 0, 5)
 
 	query1 := `
 		INSERT INTO users (chat_id, joined_at, sub_until, username)  
@@ -54,7 +55,7 @@ func (db *DB) AddUser(chatID int64, username string) (isExist bool, err error) {
 		return false, fmt.Errorf("ошибка при получении RowsAffected: %w", err)
 	}
 
-	isExist = rows <= 0
+	isExist := rows <= 0
 
 	return isExist, err
 }
@@ -117,7 +118,8 @@ func (db *DB) SaveTransaction(txID string, userID int64, amount float64, days in
 
 func (db *DB) AddSubscriptionDays(chatID int64, daysToAdd int) error {
 	var currentEnd time.Time
-	err := db.conn.QueryRow(`SELECT sub_until FROM users WHERE chat_id = $1`, chatID).Scan(&currentEnd)
+	query := `SELECT sub_until FROM users WHERE chat_id = $1`
+	err := db.conn.QueryRow(query, chatID).Scan(&currentEnd)
 	if err != nil {
 		return err
 	}
@@ -129,5 +131,101 @@ func (db *DB) AddSubscriptionDays(chatID int64, daysToAdd int) error {
 	newEnd = newEnd.AddDate(0, 0, daysToAdd)
 
 	_, err = db.conn.Exec(`UPDATE users SET sub_until = $1 WHERE chat_id = $2`, newEnd, chatID)
+	return err
+}
+
+func (db *DB) GetUserConfig(chatID int64) (*config.DbConfig, error) {
+	var cfg config.DbConfig
+	var chat_id int64
+	query := `SELECT * FROM usersconfig WHERE chat_id = $1`
+	err := db.conn.QueryRow(query, chatID).Scan(&chat_id, &cfg.ExtraInfo.ShowPriceChange24h, &cfg.ExtraInfo.ShowOrderbookImbalance, &cfg.ExtraInfo.ShowListingDate, &cfg.ExtraInfo.ShowVolume24h, &cfg.ExtraInfo.ShowFundingRate, &cfg.ExtraInfo.ShowRSI)
+	if err != nil {
+		fmt.Println("err: ", err)
+		return nil, err
+	}
+
+	return &cfg, err
+}
+
+func (db *DB) SetShowPriceChange24h(chatID int64) error {
+	var curChoice bool
+	query := `SELECT show_price_change_24h FROM usersconfig WHERE chat_id = $1`
+	err := db.conn.QueryRow(query, chatID).Scan(&curChoice)
+	if err != nil {
+		fmt.Println("err: ", err)
+		return err
+	}
+
+	query = `UPDATE usersconfig SET show_price_change_24h = $1 WHERE chat_id = $2`
+	_, err = db.conn.Exec(query, !curChoice, chatID)
+	return err
+}
+
+func (db *DB) SetShowOrderbookImbalance(chatID int64) error {
+	var curChoice bool
+	query := `SELECT show_orderbook_imbalance FROM usersconfig WHERE chat_id = $1`
+	err := db.conn.QueryRow(query, chatID).Scan(&curChoice)
+	if err != nil {
+		fmt.Println("err: ", err)
+		return err
+	}
+
+	query = `UPDATE usersconfig SET show_orderbook_imbalance = $1 WHERE chat_id = $2`
+	_, err = db.conn.Exec(query, !curChoice, chatID)
+	return err
+}
+
+func (db *DB) SetShowListingDate(chatID int64) error {
+	var curChoice bool
+	query := `SELECT show_listing_date FROM usersconfig WHERE chat_id = $1`
+	err := db.conn.QueryRow(query, chatID).Scan(&curChoice)
+	if err != nil {
+		fmt.Println("err: ", err)
+		return err
+	}
+
+	query = `UPDATE usersconfig SET show_listing_date = $1 WHERE chat_id = $2`
+	_, err = db.conn.Exec(query, !curChoice, chatID)
+	return err
+}
+
+func (db *DB) SetShowVolume24h(chatID int64) error {
+	var curChoice bool
+	query := `SELECT show_volume_24h FROM usersconfig WHERE chat_id = $1`
+	err := db.conn.QueryRow(query, chatID).Scan(&curChoice)
+	if err != nil {
+		fmt.Println("err: ", err)
+		return err
+	}
+
+	query = `UPDATE usersconfig SET show_volume_24h = $1 WHERE chat_id = $2`
+	_, err = db.conn.Exec(query, !curChoice, chatID)
+	return err
+}
+
+func (db *DB) SetShowFunding(chatID int64) error {
+	var curChoice bool
+	query := `SELECT show_funding_rate FROM usersconfig WHERE chat_id = $1`
+	err := db.conn.QueryRow(query, chatID).Scan(&curChoice)
+	if err != nil {
+		fmt.Println("err: ", err)
+		return err
+	}
+
+	query = `UPDATE usersconfig SET show_funding_rate = $1 WHERE chat_id = $2`
+	_, err = db.conn.Exec(query, !curChoice, chatID)
+	return err
+}
+func (db *DB) SetShowRSI(chatID int64) error {
+	var curChoice bool
+	query := `SELECT show_rsi FROM usersconfig WHERE chat_id = $1`
+	err := db.conn.QueryRow(query, chatID).Scan(&curChoice)
+	if err != nil {
+		fmt.Println("err: ", err)
+		return err
+	}
+
+	query = `UPDATE usersconfig SET show_rsi = $1 WHERE chat_id = $2`
+	_, err = db.conn.Exec(query, !curChoice, chatID)
 	return err
 }

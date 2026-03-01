@@ -288,7 +288,7 @@ func GetImbalance(symbol string) (float64, error) {
 	return bidVol / total, nil
 }
 
-func FinalOutput(symbol string, params PumpParams, cfg config.DbConfig) (output string) {
+func FinalOutput(symbol string, params PumpParams, cfg *config.DbConfig) (output string) {
 	var str string
 
 	symbolFormated := strings.TrimSuffix(symbol, "_USDT")

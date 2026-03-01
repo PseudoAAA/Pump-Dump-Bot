@@ -1,7 +1,6 @@
 package ForBot
 
 import (
-	"PumpDumpBot/internal/config"
 	"PumpDumpBot/internal/db"
 	"PumpDumpBot/internal/scanner"
 	"crypto/hmac"
@@ -24,6 +23,11 @@ import (
 
 type Bot struct {
 	*tgbotapi.BotAPI
+}
+
+var choice = map[bool]string{
+	true:  "✅",
+	false: "❌",
 }
 
 func getMessageForUser(userID int64) string {
@@ -77,20 +81,17 @@ func CheckMessages() {
 		log.Printf("Ошибка открытия файла: %v", err)
 	}
 
-	// 2. Парсим JSON в мапу (словарь)
 	var messages map[string]string
 	err = json.Unmarshal(file, &messages)
 	if err != nil {
 		log.Printf("Ошибка парсинга JSON: %v", err)
 	}
 
-	// Настройка получения обновлений
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		// 1. Сначала проверяем нажатие на кнопки (CallbackQuery) 🔘
 		if update.CallbackQuery != nil {
 			data := update.CallbackQuery.Data
 			chatID := update.CallbackQuery.Message.Chat.ID
@@ -113,7 +114,7 @@ func CheckMessages() {
 
 			case "open_settings":
 
-				keyboard := getSettingsKeyboard()
+				keyboard := getSettingsKeyboard(chatID)
 				editMsg := tgbotapi.NewEditMessageText(chatID, messageID, messages["⚙️ Настройки"])
 				editMsg.ReplyMarkup = &keyboard
 				bot.Send(editMsg)
@@ -186,13 +187,48 @@ func CheckMessages() {
 				msg := tgbotapi.NewMessage(chatID, "Отправьте ваш **TxID** ответным сообщением.\n")
 				bot.Send(msg)
 				lastAction = "pay_done"
+
+			case "price_24h":
+				db.SetShowPriceChange24h(chatID)
+				keyboard := getSettingsKeyboard(chatID)
+				edit := tgbotapi.NewEditMessageReplyMarkup(chatID, messageID, keyboard)
+				bot.Send(edit)
+
+			case "show_imbalance":
+				db.SetShowOrderbookImbalance(chatID)
+				keyboard := getSettingsKeyboard(chatID)
+				edit := tgbotapi.NewEditMessageReplyMarkup(chatID, messageID, keyboard)
+				bot.Send(edit)
+
+			case "show_listing":
+				db.SetShowListingDate(chatID)
+				keyboard := getSettingsKeyboard(chatID)
+				edit := tgbotapi.NewEditMessageReplyMarkup(chatID, messageID, keyboard)
+				bot.Send(edit)
+
+			case "volume_24h":
+				db.SetShowVolume24h(chatID)
+				keyboard := getSettingsKeyboard(chatID)
+				edit := tgbotapi.NewEditMessageReplyMarkup(chatID, messageID, keyboard)
+				bot.Send(edit)
+
+			case "show_funding":
+				db.SetShowFunding(chatID)
+				keyboard := getSettingsKeyboard(chatID)
+				edit := tgbotapi.NewEditMessageReplyMarkup(chatID, messageID, keyboard)
+				bot.Send(edit)
+
+			case "show_rsi":
+				db.SetShowRSI(chatID)
+				keyboard := getSettingsKeyboard(chatID)
+				edit := tgbotapi.NewEditMessageReplyMarkup(chatID, messageID, keyboard)
+				bot.Send(edit)
 			}
-			// Обязательно подтверждаем callback, чтобы убрать "часики" ⌛
+
 			bot.Request(tgbotapi.NewCallback(update.CallbackQuery.ID, ""))
-			continue // Переходим к следующему обновлению, не проверяя Message
+			continue
 		}
 
-		// 2. Затем проверяем обычные сообщения (Message) ✉️
 		if update.Message != nil {
 			chatID := update.Message.Chat.ID
 
@@ -208,13 +244,13 @@ func CheckMessages() {
 				lastAction = "start"
 
 				if !isExist {
-					msg = tgbotapi.NewMessage(chatID, "✅Тебе активирован пробный период на 7 дней.")
+					msg = tgbotapi.NewMessage(chatID, "✅Активирован пробный период на 5 дней.")
 					bot.Send(msg)
 				}
 
 			case "⚙️ Настройки":
 				msg := tgbotapi.NewMessage(chatID, messages[update.Message.Text])
-				msg.ReplyMarkup = getSettingsKeyboard()
+				msg.ReplyMarkup = getSettingsKeyboard(chatID)
 				bot.Send(msg)
 				lastAction = "settings"
 
@@ -321,15 +357,18 @@ func getMainMenu() tgbotapi.ReplyKeyboardMarkup {
 	return keyboard
 }
 
-func getSettingsKeyboard() tgbotapi.InlineKeyboardMarkup {
+func getSettingsKeyboard(chatID int64) tgbotapi.InlineKeyboardMarkup {
+	db, _ := db.InitDB(os.Getenv("DB_STR"))
+	cfg, _ := db.GetUserConfig(chatID)
 	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
+
+		/*tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⏱️Интервал мониторинга", "interval_monitoring"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("📈Порог изменения цены", "pump"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
+		),*/
+		/*tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🔥RSI", "rsi"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
@@ -337,21 +376,25 @@ func getSettingsKeyboard() tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🛒Имбаланс", "imbalance"),
+		),*/
+
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("📊Изменение цены за 24 часа %s", choice[cfg.ExtraInfo.ShowPriceChange24h]), "price_24h"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("📊Изменение цены за 24 часа", "price_24h"),
+			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("🛒Отображение имбаланса %s", choice[cfg.ExtraInfo.ShowOrderbookImbalance]), "show_imbalance"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🛒Отображение имбаланса", "show_imbalance"),
+			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("📅Отображение Листинга %s", choice[cfg.ExtraInfo.ShowListingDate]), "show_listing"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("📅Листинг", "show_listing"),
+			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("📊Объем за 24 часа %s", choice[cfg.ExtraInfo.ShowVolume24h]), "volume_24h"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("📊Объем за 24 часа", "volume_24h"),
+			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("💰Отображение фандинга %s", choice[cfg.ExtraInfo.ShowFundingRate]), "show_funding"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("💰Отображение фандинга", "show_funding"),
+			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("🔥RSI %s", choice[cfg.ExtraInfo.ShowRSI]), "show_rsi"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Вернуться в меню⬅️", "open_menu"),
@@ -471,6 +514,7 @@ func getPayAccessTime(days int, tmp string) (str string, err error) {
 		30: "30.0",
 		90: "80.0",
 	}
+
 	replacer := strings.NewReplacer(
 		"{days}", strconv.Itoa(days),
 		"{price}", daysPrice[days],
@@ -483,7 +527,6 @@ func VerifyMexcPayment(apiKey, apiSecret, targetTxID string) (float64, bool, err
 	baseURL := "https://api.mexc.com/api/v3/capital/deposit/hisrec"
 	now := time.Now()
 
-	// Ограничение 7 дней согласно ошибке 33333
 	startTime := now.AddDate(0, 0, -7).UnixMilli()
 	endTime := now.UnixMilli()
 
@@ -512,7 +555,7 @@ func VerifyMexcPayment(apiKey, apiSecret, targetTxID string) (float64, bool, err
 	body, _ := io.ReadAll(resp.Body)
 	var records []struct {
 		TxID   string `json:"txId"`
-		Status int    `json:"status"` // 5 — успех
+		Status int    `json:"status"`
 		Amount string `json:"amount"`
 	}
 
@@ -531,31 +574,23 @@ func VerifyMexcPayment(apiKey, apiSecret, targetTxID string) (float64, bool, err
 	return 0, false, nil
 }
 
-func SendMessageToActiveUsers(chatID []int64, symbol, photoPath string, params scanner.PumpParams) {
+func SendMessageToActiveUsers(db *db.DB, chatID []int64, symbol, photoPath string, params scanner.PumpParams) {
 	bot, _ := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
 
 	for _, userID := range chatID {
-		cfgg := config.DbConfig{ExtraInfo: struct {
-			ShowPriceChange24h     bool `json:"show_price_change_24h"`
-			ShowOrderbookImbalance bool `json:"show_orderbook_imbalance"`
-			ShowListingDate        bool `json:"show_listing_date"`
-			ShowVolume24h          bool `json:"show_volume_24h"`
-			ShowFundingRate        bool `json:"show_funding_rate"`
-			ShowRSI                bool `json:"show_rsi"`
-		}{ShowPriceChange24h: true, ShowOrderbookImbalance: true, ShowListingDate: true, ShowVolume24h: true, ShowFundingRate: true, ShowRSI: true}}
-		txt := scanner.FinalOutput(symbol, params, cfgg)
+		cfg, err := db.GetUserConfig(userID)
+		if err != nil {
+			fmt.Println(userID, ": err: ", err)
+			continue
+		}
+		txt := scanner.FinalOutput(symbol, params, cfg)
 
 		msg := tgbotapi.NewPhoto(userID, tgbotapi.FilePath(photoPath))
 		msg.Caption = txt
 		msg.ParseMode = "HTML"
-		_, err := bot.Send(msg)
+		_, err = bot.Send(msg)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
 }
-
-/*func GetUserConfig(chatID int64) (cfg *config.Config, err error) {
-
-}
-*/
