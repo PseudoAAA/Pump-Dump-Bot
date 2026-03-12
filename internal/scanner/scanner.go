@@ -33,9 +33,11 @@ func GetContracts() ([]string, error) {
 }
 
 func FindPump(symbol string, cfg *config.Config) (pct float64, open float64, close float64, kline KlineData) {
-	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Min%f&limit=100",
-		symbol,
-		cfg.PriceMonitoring.IntervalMinutes)
+	if strings.Contains(symbol, "USDC") {
+		return 0, 0, 0, KlineData{}
+	}
+
+	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Min1&limit=80", symbol)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -43,50 +45,71 @@ func FindPump(symbol string, cfg *config.Config) (pct float64, open float64, clo
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	var r KlineResp
-	json.Unmarshal(body, &r)
-	//|| !isVolumeSpike(r, 15, 1)
-	if len(r.Data.Open) < 2 || len(r.Data.Close) < 0 || !isVolumeSpike(r, 15, 1) {
+	if err := json.Unmarshal(body, &r); err != nil || len(r.Data.Close) < 80 {
 		return 0, 0, 0, KlineData{}
 	}
-	open = r.Data.Open[0]
-	close = r.Data.Close[len(r.Data.Close)-1] //len(r.Data.Close)-1
 
-	rsi, _ := GetRSI(symbol)
-	funding, _ := GetFundingRate(symbol)
-	imbalance, _ := GetImbalance(symbol)
-	if checkRSI(cfg, rsi) && checkFunding(cfg, funding) && checkImbalance(cfg, imbalance) {
-		return ((close - open) / open) * 100, open, close, r.Data
+	data := r.Data
+	lastIdx := len(r.Data.Close) - 1
+	currentPrice := data.Close[lastIdx]
+
+	minPrice := data.Low[lastIdx]
+	minIdx := 0
+	for i := 0; i <= lastIdx; i++ {
+		if data.Low[i] < minPrice {
+			minPrice = data.Low[i]
+			minIdx = i
+		}
+	}
+
+	maxPrice := data.High[lastIdx]
+	highIdx := 0
+	for i := 0; i <= lastIdx; i++ {
+		if data.High[i] > maxPrice {
+			maxPrice = data.High[i]
+			highIdx = i
+		}
+	}
+
+	if highIdx >= 78 && minIdx <= highIdx-10 {
+		pct = ((maxPrice - minPrice) / minPrice) * 100
+	} else {
+		pct = ((currentPrice - minPrice) / minPrice) * 100
+	}
+
+	//fmt.Println(symbol, "pct: ", pct, " min: ", minPrice, " cur: ", currentPrice, " max: ", maxPrice)
+	if pct >= cfg.PriceMonitoring.MinPriceChangePercent && IsVolumeSpike(symbol, data.Volume, 30, 10.0) {
+		return pct, minPrice, maxPrice, data
 	}
 
 	return 0, 0, 0, KlineData{}
 }
 
-func isVolumeSpike(kline KlineResp, lookback int, multiplier float64) bool {
-	volumes := kline.Data.Volume
-	length := len(volumes)
-
-	if length < lookback+2 {
+func IsVolumeSpike(symbol string, volumes []float64, lookback int, multiplier float64) bool {
+	length := len(volumes) - 1
+	if length < 2 {
 		return false
 	}
 
-	currentIndex := length - 2
-	currentVolume := volumes[currentIndex]
-
-	var sum float64
-	start := currentIndex - lookback
-
-	for i := start; i < currentIndex; i++ {
-		sum += volumes[i]
+	var currentVolume float64
+	for i := 0; i < 3; i++ {
+		currentVolume += volumes[length-i]
 	}
 
-	avgVolume := sum / float64(lookback)
+	var sum float64
+	for i := 0; lookback > i; i++ {
+		sum += volumes[length-i]
+	}
+
+	avgVolume := (sum - currentVolume) / float64(lookback)
 	if avgVolume == 0 {
 		return false
 	}
 
-	return currentVolume >= avgVolume*multiplier
+	fmt.Printf("%s x: %.2f\n", symbol, currentVolume/avgVolume)
+	return currentVolume/avgVolume >= multiplier
 }
 
 func Get24hVolume(symbol string) (float64, error) {
@@ -113,7 +136,7 @@ func Get24hVolume(symbol string) (float64, error) {
 	var r TickerResp
 	json.Unmarshal(body, &r)
 
-	return r.Data.Volume24, nil
+	return r.Data.Amount24, nil
 }
 
 func GetRSI(symbol string) (float64, error) {
@@ -126,9 +149,8 @@ func GetRSI(symbol string) (float64, error) {
 		return 0, nil
 	}
 
-	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Min%f&limit=100",
-		symbol,
-		cfg.RsiParams.TimeframeMinutes)
+	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Hour4&limit=100",
+		symbol)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -298,7 +320,7 @@ func FinalOutput(symbol string, params PumpParams, cfg *config.DbConfig) (output
 
 	if cfg.ExtraInfo.ShowRSI {
 		rsi, _ := GetRSI(symbol)
-		str += fmt.Sprintf("RSI: %.2f\n", rsi)
+		str += fmt.Sprintf("RSI7 (4 hours): %.2f\n", rsi)
 	}
 
 	if cfg.ExtraInfo.ShowPriceChange24h {

@@ -140,7 +140,7 @@ func (db *DB) GetUserConfig(chatID int64) (*config.DbConfig, error) {
 	query := `SELECT * FROM usersconfig WHERE chat_id = $1`
 	err := db.conn.QueryRow(query, chatID).Scan(&chat_id, &cfg.ExtraInfo.ShowPriceChange24h, &cfg.ExtraInfo.ShowOrderbookImbalance, &cfg.ExtraInfo.ShowListingDate, &cfg.ExtraInfo.ShowVolume24h, &cfg.ExtraInfo.ShowFundingRate, &cfg.ExtraInfo.ShowRSI)
 	if err != nil {
-		fmt.Println("err: ", err)
+		fmt.Println("cfg err: ", err)
 		return nil, err
 	}
 

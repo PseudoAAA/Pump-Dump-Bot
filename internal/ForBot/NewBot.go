@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"log"
@@ -23,6 +24,19 @@ import (
 
 type Bot struct {
 	*tgbotapi.BotAPI
+}
+
+type SignalTracker struct {
+	mu       sync.Mutex
+	signals  map[string]*SignalInfo
+	lastDay  int
+	cooldown time.Duration
+}
+
+// SignalInfo хранит данные по конкретной монете
+type SignalInfo struct {
+	LastSent   time.Time
+	CountToday int
 }
 
 var choice = map[bool]string{
@@ -574,7 +588,7 @@ func VerifyMexcPayment(apiKey, apiSecret, targetTxID string) (float64, bool, err
 	return 0, false, nil
 }
 
-func SendMessageToActiveUsers(db *db.DB, chatID []int64, symbol, photoPath string, params scanner.PumpParams) {
+func SendMessageToActiveUsers(db *db.DB, chatID []int64, symbol, photoPath string, params scanner.PumpParams, count int) {
 	bot, _ := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
 
 	for _, userID := range chatID {
@@ -584,7 +598,7 @@ func SendMessageToActiveUsers(db *db.DB, chatID []int64, symbol, photoPath strin
 			continue
 		}
 		txt := scanner.FinalOutput(symbol, params, cfg)
-
+		txt += fmt.Sprintf("24h count: %d", count)
 		msg := tgbotapi.NewPhoto(userID, tgbotapi.FilePath(photoPath))
 		msg.Caption = txt
 		msg.ParseMode = "HTML"
@@ -593,4 +607,39 @@ func SendMessageToActiveUsers(db *db.DB, chatID []int64, symbol, photoPath strin
 			fmt.Println(err)
 		}
 	}
+}
+
+func NewSignalTracker(cooldown time.Duration) *SignalTracker {
+	return &SignalTracker{
+		signals:  make(map[string]*SignalInfo),
+		lastDay:  time.Now().Day(),
+		cooldown: cooldown,
+	}
+}
+
+func (st *SignalTracker) CheckAndCount(symbol string) (canSend bool, countToday int) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	currentDay := time.Now().Day()
+
+	if currentDay != st.lastDay {
+		st.signals = make(map[string]*SignalInfo)
+		st.lastDay = currentDay
+	}
+
+	info, exists := st.signals[symbol]
+	if !exists {
+		info = &SignalInfo{}
+		st.signals[symbol] = info
+	}
+
+	if !info.LastSent.IsZero() && time.Since(info.LastSent) < st.cooldown {
+		return false, info.CountToday
+	}
+
+	info.LastSent = time.Now()
+	info.CountToday++
+
+	return true, info.CountToday
 }

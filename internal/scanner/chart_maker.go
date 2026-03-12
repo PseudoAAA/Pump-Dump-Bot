@@ -2,10 +2,13 @@ package scanner
 
 import (
 	"PumpDumpBot/internal/config"
+	"encoding/json"
 	"fmt"
 	"image/color"
+	"io"
 	"log"
 	"math"
+	"net/http"
 	"os"
 	"time"
 
@@ -130,7 +133,18 @@ func DrawPriceChartOld(symbol string, kline KlineData, filePath string) error {
 }
 
 func DrawPriceChart(symbol string, kline KlineData, filePath string) error {
-	cfg, err := config.LoadMexcConfig("internal/config/config.json")
+	url := fmt.Sprintf("https://contract.mexc.com/api/v1/contract/kline/%s?interval=Min1&limit=100",
+		symbol)
+	resp, err := http.Get(url)
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	var r KlineResp
+	json.Unmarshal(body, &r)
+
+	kline = r.Data
+
+	_, err = config.LoadMexcConfig("internal/config/config.json")
 	if err != nil {
 		log.Fatal("mexc config load error", "err", err)
 	}
@@ -154,10 +168,9 @@ func DrawPriceChart(symbol string, kline KlineData, filePath string) error {
 		startT := kline.Time[0]
 		endT := kline.Time[n-1]
 		// Шаг в секундах
-		stepSec := int64(cfg.PriceMonitoring.IntervalMinutes * 60)
 
 		// Генерируем метки времени с заданным шагом
-		for t := startT; t <= endT; t += stepSec {
+		for t := startT; t <= endT; t += 600 {
 			ticks = append(ticks, plot.Tick{
 				Value: float64(t),
 				Label: time.Unix(t, 0).Format("15:04"),

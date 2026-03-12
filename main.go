@@ -54,6 +54,7 @@ func main() {
 	fmt.Println("Symbols count:", len(symbols))
 
 	go ForBot.CheckMessages()
+	tracker := ForBot.NewSignalTracker(15 * time.Minute)
 
 	for {
 		symbols, err = scanner.GetContracts()
@@ -63,24 +64,28 @@ func main() {
 
 			if pump >= cfg.PriceMonitoring.MinPriceChangePercent {
 				pumpParams := scanner.PumpParams{Pct: pump, Open: open, Close: close, Kline: kline}
+				canSend, count := tracker.CheckAndCount(symbol)
 
-				file := fmt.Sprintf(
-					"charts/%s_%d.png",
-					symbol,
-					time.Now().Unix(),
-				)
+				fmt.Println(symbol, canSend, count)
 
-				if err := scanner.DrawPriceChart(symbol, kline, file); err != nil {
-					logger.Warn("DrawPriceChart", err)
+				if canSend {
+					file := fmt.Sprintf(
+						"charts/%s_%d.png",
+						symbol,
+						time.Now().Unix(),
+					)
+
+					if err := scanner.DrawPriceChart(symbol, kline, file); err != nil {
+						logger.Warn("DrawPriceChart", err)
+					}
+
+					users, _ := db.GetActiveUsers()
+					ForBot.SendMessageToActiveUsers(db, users, symbol, file, pumpParams, count)
+
+					if err := os.Remove(file); err != nil {
+						logger.Warn("Remove photo error: ", err)
+					}
 				}
-
-				users, _ := db.GetActiveUsers()
-				ForBot.SendMessageToActiveUsers(db, users, symbol, file, pumpParams)
-
-				if err := os.Remove(file); err != nil {
-					logger.Warn("Remove photo error: ", err)
-				}
-
 			}
 		}
 	}
