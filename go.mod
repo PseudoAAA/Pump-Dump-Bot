@@ -1,6 +1,6 @@
 module PumpDumpBot
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
@@ -18,6 +18,7 @@ require (
 	github.com/chromedp/cdproto v0.0.0-20250724212937-08a3db8b4327 // indirect
 	github.com/chromedp/chromedp v0.14.2 // indirect
 	github.com/chromedp/sysutil v1.1.0 // indirect
+	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/go-echarts/go-echarts/v2 v2.6.7 // indirect
 	github.com/go-json-experiment/json v0.0.0-20250725192818-e39067aee2d2 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
@@ -26,9 +27,9 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/lib/pq v1.11.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/image v0.25.0 // indirect
+	golang.org/x/image v0.37.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 	gonum.org/v1/plot v0.16.0 // indirect
 	rsc.io/pdf v0.1.1 // indirect
 )

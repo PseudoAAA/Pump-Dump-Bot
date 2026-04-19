@@ -5,12 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0a12b12c-12bc-4827-a154-b3e9cb322a51" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/market/market.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/ForBot/NewBot.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/ForBot/NewBot.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/config/config.json" beforeDir="false" afterPath="$PROJECT_DIR$/internal/config/config.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/db/db.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/scanner/chart_maker.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/scanner/chart_maker.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/scanner/scanner.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/scanner/scanner.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/scanner/types.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/scanner/types.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -22,6 +25,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Go File" />
+        <option value="Dockerfile" />
       </list>
     </option>
   </component>
@@ -44,6 +48,10 @@
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/internal/scanner/scanner.go" root0="FORCE_HIGHLIGHTING" />
   </component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -51,6 +59,9 @@
   &quot;associatedIndex&quot;: 0
 }</component>
   <component name="ProjectId" id="37CaVjLjkqFN0nDG3CEeG9blXOM" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />

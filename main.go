@@ -59,31 +59,35 @@ func main() {
 	for {
 		symbols, err = scanner.GetContracts()
 		for _, symbol := range symbols {
+			listingDate, _ := scanner.ListingDate(symbol)
+			rsi, _ := scanner.GetRSI(symbol)
+			if listingDate > 70 && rsi > 67 {
+				pump, open, close, kline := scanner.FindPump(symbol, cfg)
 
-			pump, open, close, kline := scanner.FindPump(symbol, cfg)
+				if pump >= cfg.PriceMonitoring.MinPriceChangePercent {
+					pumpParams := scanner.PumpParams{Pct: pump, Open: open, Close: close, Kline: kline}
+					canSend, count := tracker.CheckAndCount(symbol)
+					zones := scanner.FindResistanceZones(symbol)
 
-			if pump >= cfg.PriceMonitoring.MinPriceChangePercent {
-				pumpParams := scanner.PumpParams{Pct: pump, Open: open, Close: close, Kline: kline}
-				canSend, count := tracker.CheckAndCount(symbol)
+					fmt.Println(symbol, canSend, count)
 
-				fmt.Println(symbol, canSend, count)
+					if canSend {
+						file := fmt.Sprintf(
+							"charts/%s_%d.png",
+							symbol,
+							time.Now().Unix(),
+						)
 
-				if canSend {
-					file := fmt.Sprintf(
-						"charts/%s_%d.png",
-						symbol,
-						time.Now().Unix(),
-					)
+						if err := scanner.DrawChart(symbol, kline, zones, file); err != nil {
+							logger.Warn("DrawPriceChart", err)
+						}
 
-					if err := scanner.DrawPriceChart(symbol, kline, file); err != nil {
-						logger.Warn("DrawPriceChart", err)
-					}
+						users, _ := db.GetActiveUsers()
+						ForBot.SendMessageToActiveUsers(db, users, symbol, file, pumpParams, count)
 
-					users, _ := db.GetActiveUsers()
-					ForBot.SendMessageToActiveUsers(db, users, symbol, file, pumpParams, count)
-
-					if err := os.Remove(file); err != nil {
-						logger.Warn("Remove photo error: ", err)
+						if err := os.Remove(file); err != nil {
+							logger.Warn("Remove photo error: ", err)
+						}
 					}
 				}
 			}

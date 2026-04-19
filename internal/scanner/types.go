@@ -15,7 +15,7 @@ type KlineData struct {
 	Close  []float64 `json:"close"`
 	High   []float64 `json:"high"`
 	Low    []float64 `json:"low"`
-	Volume []float64 `json:"vol"`
+	Volume []float64 `json:"amount"`
 }
 
 type KlineResp struct {
@@ -75,4 +75,16 @@ type OrderBookAnomaly struct {
 	Imbalance  float64
 	CurrentBid float64
 	CurrentAsk float64
+}
+
+type PriceZone struct {
+	Price      float64
+	Volume     float64
+	StartIndex int // Номер свечи, на которой был всплеск
+}
+
+type Ema struct {
+	Ema7  float64
+	Ema14 float64
+	Ema28 float64
 }
